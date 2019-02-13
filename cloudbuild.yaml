@@ -1,0 +1,14 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'cache'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull eu.gcr.io/$PROJECT_ID/wireguard-operator:latest || exit 0']
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build'
+  args: [
+    'build',
+    '-t', 'eu.gcr.io/$PROJECT_ID/wireguard-operator:latest',
+    '--cache-from', 'eu.gcr.io/$PROJECT_ID/wireguard-operator:latest',
+    '.'
+  ]
+images: ['eu.gcr.io/$PROJECT_ID/wireguard-operator:latest']
