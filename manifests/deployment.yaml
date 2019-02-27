@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: wireguard-operator
+  labels:
+    component: wireguard-operator
+spec:
+  selector:
+    matchLabels:
+      component: wireguard-operator
+  template:
+    metadata:
+      labels:
+        component: wireguard-operator
+    spec:
+      containers:
+      - name: wireguard-operator
+        image: eu.gcr.io/klaudify/wireguard-operator:latest
+        imagePullPolicy: IfNotPresent
+        args:
+          - -wireguard-private-key=$(PRIVATE_KEY)
+        env:
+          - name: PRIVATE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: wireguard-operator
+                key: private_key
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64m
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+          # Can we run without this?
+          allowPrivilegeEscalation: true
+      hostNetwork: true
+      volumes:
+        - name: dev-tun
+          hostPath:
+            path: /dev/net/tun

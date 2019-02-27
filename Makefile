@@ -1,6 +1,8 @@
 TEST_HOST?=35.228.23.66
 TEST_FLAGS?=-test.v
 APP?=wireguard-operator
+KUBECONFIG?=$(CURDIR)/../kube/kubeadm/admin.conf
+export KUBECONFIG
 
 .PHONY: docker
 docker: clean
@@ -15,3 +17,23 @@ integration_test:
 .PHONY: clean
 clean:
 	-@rm $(APP).test wgo
+
+.PHONY: init
+init: manifests/.secrets.yaml
+	kubectl create --save-config -f manifests
+
+.PHONY: deploy
+deploy: manifests/.secrets.yaml
+	kubectl apply -f manifests
+
+manifests/.secrets.yaml: manifests/.secrets.yaml.kms
+	gcloud kms decrypt --location global \
+		--keyring blokada --key kubernetes-secrets \
+		--plaintext-file $@ \
+		--ciphertext-file $@.kms
+
+manifests/.secrets.yaml.kms: manifests/.secrets.yaml
+	gcloud kms encrypt --location global \
+		--keyring blokada --key kubernetes-secrets \
+		--plaintext-file manifests/.secrets.yaml \
+		--ciphertext-file $@
