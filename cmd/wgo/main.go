@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"flag"
 	"net"
 	"net/http"
@@ -17,12 +18,14 @@ func main() {
 	ifName := flag.String(
 		"interface", "wg0", "which WireGuard interface to use")
 	ifDelete := flag.Bool(
-		"interface_delete", false, "delete specificed interface on exit if we created it")
+		"interface-delete", false, "delete specificed interface on exit")
 	externalIP4 := flag.String(
 		"external-ip4", "127.0.0.1", "endpoint reported to clients for incoming IPv4 WireGuard traffic")
 	externalIP6 := flag.String(
 		"external-ip6", "", "endpoint reported to clients for incoming IPv6 WireGuard traffic")
 	wgPort := flag.Int("wireguard-port", 51820, "port for incoming WireGuard traffic")
+	wgKey := flag.String(
+		"wireguard-private-key", "", "private key as base64 string, or empty to generate")
 	listenAddr := flag.String(
 		"listen-addr", "0.0.0.0:8080", "listen address for API traffic")
 	ip4Addr := flag.String(
@@ -38,53 +41,39 @@ func main() {
 	}
 
 	// Use existing link or create a new one.
-	wg, err := netlink.LinkByName(*ifName)
+	wg, err := operator.NewWgLink(*ifName)
 	if err != nil {
-		switch err.(type) {
-		case netlink.LinkNotFoundError:
-			wg = &operator.WgLink{LinkAttrs: netlink.LinkAttrs{Name: *ifName}}
-			if err := netlink.LinkAdd(wg); err != nil {
-				log.Fatal(err)
-			}
-			// Delete the link on exit if we created it.
-			if *ifDelete {
-				defer func() { netlink.LinkDel(wg) }()
-			}
-		default:
-			log.Fatal(err)
-		}
+		log.Fatal("main.NewWgLink: ", err)
+	}
+	// Delete the link on exit.
+	if *ifDelete {
+		defer func() { wg.Close() }()
 	}
 
 	addr4, err := netlink.ParseAddr(*ip4Addr)
 	if err != nil {
-		log.Fatal(err)
-	}
-	if err := netlink.AddrAdd(wg, addr4); err != nil {
-		log.Fatal(err)
+		log.Fatal("main.ParseAddr4: ", err)
 	}
 	addr6, err := netlink.ParseAddr(*ip6Addr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("main.ParseAddr6: ", err)
 	}
-	if err := netlink.AddrAdd(wg, addr6); err != nil {
-		log.Fatal(err)
+	if err := wg.AddrAdd(addr4, addr6); err != nil {
+		log.Fatal("main.AddrAdd: ", err)
 	}
 
-	c, err := operator.NewWgClient(*ifName, *wgPort)
+	c, err := operator.NewWgClient(wg, *wgPort, *wgKey)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("main.NewWgClient: ", err)
 	}
-	d, err := c.Device(*ifName)
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	p, err := operator.NewPool(*ip4Addr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("main.NewPool: ", err)
 	}
 	_, net6, err := net.ParseCIDR(*ip6Addr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("main.ParseCIDR6: ", err)
 	}
 	ip4 := net.ParseIP(*externalIP4)
 	ip6 := net.ParseIP(*externalIP6)
@@ -98,7 +87,7 @@ func main() {
 		publicKey:   c.PublicKey(),
 	}
 	log.Infof("WireGuard Operator version %s", version)
-	log.Infof("Public key: %s", d.PublicKey.String())
+	log.Infof("Public key: %s", base64.StdEncoding.EncodeToString(c.PublicKey()))
 	http.HandleFunc("/v1/peer", operator.PeerHandler(c, id, p, net6))
 	if err := http.ListenAndServe(*listenAddr, nil); err != nil {
 		log.Fatal(err)

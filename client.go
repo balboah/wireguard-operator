@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"encoding/base64"
 	"net"
 
 	"github.com/mdlayher/wireguardctrl"
@@ -24,29 +25,42 @@ type WgIdentity interface {
 }
 
 // WgClient is a thin wrapper around wireguardctrl for binding config
-// to a specific interface name.
+// to a specific interface link.
 type WgClient struct {
-	ifName     string
+	link       *WgLink
 	port       int
 	privateKey wgtypes.Key
 	*wireguardctrl.Client
 }
 
-func NewWgClient(ifName string, port int) (*WgClient, error) {
+func NewWgClient(link *WgLink, port int, pk string) (*WgClient, error) {
 	wg, err := wireguardctrl.New()
 	if err != nil {
 		return nil, err
 	}
-	key, err := wgtypes.GeneratePrivateKey()
-	if err != nil {
-		return nil, err
+	c := WgClient{link: link, port: port, Client: wg}
+	if pk == "" {
+		key, err := wgtypes.GeneratePrivateKey()
+		if err != nil {
+			return nil, err
+		}
+		c.privateKey = key
+	} else {
+		b, err := base64.StdEncoding.DecodeString(pk)
+		if err != nil {
+			return nil, err
+		}
+		key, err := wgtypes.NewKey(b)
+		if err != nil {
+			return nil, err
+		}
+		c.privateKey = key
 	}
-	c := WgClient{ifName: ifName, privateKey: key, port: port, Client: wg}
 
 	if err = c.ConfigureDevice(wgtypes.Config{
-		PrivateKey:   &key,
+		PrivateKey:   &c.privateKey,
 		ListenPort:   &port,
-		ReplacePeers: true,
+		ReplacePeers: false,
 		// Peers: []wgtypes.PeerConfig{
 		// 	{
 		// 		PublicKey:         peerKey,
@@ -61,7 +75,7 @@ func NewWgClient(ifName string, port int) (*WgClient, error) {
 }
 
 func (c *WgClient) ConfigureDevice(cfg wgtypes.Config) error {
-	return c.Client.ConfigureDevice(c.ifName, cfg)
+	return c.Client.ConfigureDevice(c.link.Name, cfg)
 }
 
 func (c *WgClient) PublicKey() []byte {
