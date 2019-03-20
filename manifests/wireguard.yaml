@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: wireguard
+  labels:
+    component: wireguard
+spec:
+  selector:
+    matchLabels:
+      component: wireguard
+  template:
+    metadata:
+      labels:
+        component: wireguard
+    spec:
+      containers:
+      - name: wireguard
+        image: eu.gcr.io/PROJECT_ID/wireguard:latest
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256m
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+          # Can we run without this?
+          allowPrivilegeEscalation: true
+        volumeMounts:
+          - mountPath: /dev/net/tun
+            name: dev-tun
+      hostNetwork: true
+      volumes:
+        - name: dev-tun
+          hostPath:
+            path: /dev/net/tun

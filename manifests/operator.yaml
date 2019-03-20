@@ -1,33 +1,25 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: wireguard-operator
+  name: operator
   labels:
-    component: wireguard-operator
+    component: operator
 spec:
   selector:
     matchLabels:
-      component: wireguard-operator
+      component: operator
   template:
     metadata:
       labels:
-        component: wireguard-operator
+        component: operator
     spec:
       containers:
-      - name: wireguard-operator
-        image: eu.gcr.io/klaudify/wireguard-operator:latest
+      - name: operator
+        image: eu.gcr.io/PROJECT_ID/wireguard-operator:latest
         imagePullPolicy: IfNotPresent
-        args:
-          - -wireguard-private-key=$(PRIVATE_KEY)
-        env:
-          - name: PRIVATE_KEY
-            valueFrom:
-              secretKeyRef:
-                name: wireguard-operator
-                key: private_key
         resources:
           requests:
-            cpu: 100m
+            cpu: 10m
             memory: 64m
         securityContext:
           capabilities:

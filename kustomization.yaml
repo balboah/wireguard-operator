@@ -1,0 +1,13 @@
+# https://github.com/kubernetes-sigs/kustomize/blob/master/docs/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: default
+
+namePrefix: wireguard-
+
+commonLabels:
+  release: wireguard-v1
+
+resources:
+- manifests/operator.yaml
