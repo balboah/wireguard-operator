@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/balboah/wireguard-operator/proto"
 	"github.com/mdlayher/wireguardctrl/wgtypes"
 )
 
@@ -18,7 +19,7 @@ func TestPeerHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	js, err := json.Marshal(PeerRequest{
+	js, err := json.Marshal(proto.PeerRequest{
 		PublicKey: keyToSlice(key.PublicKey()),
 	})
 	if err != nil {
@@ -41,7 +42,7 @@ func TestPeerHandler(t *testing.T) {
 		t.Error(http.StatusText(w.Code))
 	}
 
-	res := PeerResponse{}
+	res := proto.PeerResponse{}
 	t.Log(string(w.Body.Bytes()))
 	if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
 		t.Fatal(err)
