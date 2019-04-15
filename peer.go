@@ -6,29 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/balboah/wireguard-operator/proto"
 	"github.com/mdlayher/wireguardctrl/wgtypes"
 	log "github.com/sirupsen/logrus"
 )
-
-type PeerRequest struct {
-	PublicKey []byte `json:"public_key"`
-}
-type PeerResponse struct {
-	PublicKey []byte `json:"public_key"`
-	Endpoint4 net.IP `json:"endpoint_ipv4"`
-	Endpoint6 net.IP `json:"endpoint_ipv6"`
-	Port      int    `json:"port"`
-	VIP4      net.IP `json:"vip_ipv4"`
-	VIP6      net.IP `json:"vip_ipv6"`
-}
-
-func (r *PeerResponse) String() string {
-	b, err := json.MarshalIndent(r, "", "  ")
-	if err != nil {
-		return err.Error()
-	}
-	return string(b)
-}
 
 func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p *Pool, ip6prefix *net.IPNet) http.HandlerFunc {
 	// FIXME: do we need mutex for client?
@@ -37,7 +18,7 @@ func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p *Pool, ip6prefix *ne
 
 		switch req.Method {
 		case "PUT":
-			js := PeerRequest{}
+			js := proto.PeerRequest{}
 			if err := json.NewDecoder(req.Body).Decode(&js); err != nil {
 				log.Debug("PeerHandler.PUT:", err)
 				rw.WriteHeader(http.StatusBadRequest)
@@ -69,7 +50,7 @@ func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p *Pool, ip6prefix *ne
 				return
 			}
 
-			if err := json.NewEncoder(rw).Encode(&PeerResponse{
+			if err := json.NewEncoder(rw).Encode(&proto.PeerResponse{
 				PublicKey: wgID.PublicKey(),
 				Endpoint4: wgID.Endpoint4(),
 				Endpoint6: wgID.Endpoint6(),
