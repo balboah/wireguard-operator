@@ -19,10 +19,6 @@ func main() {
 		"interface", "wg0", "which WireGuard interface to use")
 	ifDelete := flag.Bool(
 		"interface-delete", false, "delete specificed interface on exit")
-	externalIP4 := flag.String(
-		"external-ip4", "127.0.0.1", "endpoint reported to clients for incoming IPv4 WireGuard traffic")
-	externalIP6 := flag.String(
-		"external-ip6", "", "endpoint reported to clients for incoming IPv6 WireGuard traffic")
 	wgPort := flag.Int("wireguard-port", 51820, "port for incoming WireGuard traffic")
 	wgKey := flag.String(
 		"wireguard-private-key", "", "private key as base64 string, or empty to generate")
@@ -75,35 +71,25 @@ func main() {
 	if err != nil {
 		log.Fatal("main.ParseCIDR6: ", err)
 	}
-	ip4 := net.ParseIP(*externalIP4)
-	ip6 := net.ParseIP(*externalIP6)
-	if ip4 == nil && ip6 == nil {
-		log.Fatal("need at least one external IP")
-	}
+
 	id := myID{
-		externalIP4: ip4,
-		externalIP6: ip6,
-		port:        *wgPort,
-		publicKey:   c.PublicKey(),
+		port:      *wgPort,
+		publicKey: c.PublicKey(),
 	}
 	log.Infof("WireGuard Operator version %s", version)
 	log.Infof("Public key: %s", base64.StdEncoding.EncodeToString(c.PublicKey()))
+
 	http.HandleFunc("/v1/peer", operator.PeerHandler(c, id, p, net6))
+	http.HandleFunc("/v1/id", operator.IDHandler(id))
 	if err := http.ListenAndServe(*listenAddr, nil); err != nil {
 		log.Fatal(err)
 	}
 }
 
 type myID struct {
-	externalIP4 net.IP
-	externalIP6 net.IP
-	publicKey   []byte
-	port        int
+	publicKey []byte
+	port      int
 }
-
-func (id myID) Endpoint4() net.IP { return id.externalIP4 }
-
-func (id myID) Endpoint6() net.IP { return nil }
 
 func (id myID) PublicKey() []byte { return id.publicKey }
 

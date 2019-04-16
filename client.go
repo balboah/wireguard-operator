@@ -2,7 +2,6 @@ package operator
 
 import (
 	"encoding/base64"
-	"net"
 
 	"github.com/mdlayher/wireguardctrl"
 	"github.com/mdlayher/wireguardctrl/wgtypes"
@@ -17,10 +16,6 @@ type WgDeviceConfigurator interface {
 // to connect via WireGuard.
 type WgIdentity interface {
 	PublicKey() []byte
-	// Endpoint4 for IPv4
-	Endpoint4() net.IP
-	// Endpoint6 for IPv6
-	Endpoint6() net.IP
 	Port() int
 }
 
