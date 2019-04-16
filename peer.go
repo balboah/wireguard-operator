@@ -51,12 +51,8 @@ func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p *Pool, ip6prefix *ne
 			}
 
 			if err := json.NewEncoder(rw).Encode(&proto.PeerResponse{
-				PublicKey: wgID.PublicKey(),
-				Endpoint4: wgID.Endpoint4(),
-				Endpoint6: wgID.Endpoint6(),
-				VIP4:      ip4,
-				VIP6:      ip6,
-				Port:      wgID.Port(),
+				VIP4: ip4,
+				VIP6: ip6,
 			}); err != nil {
 				log.Error("PeerHandler.PUT:", err)
 				rw.WriteHeader(http.StatusInternalServerError)

@@ -53,18 +53,6 @@ func TestPeerHandler(t *testing.T) {
 	if len(res.VIP6) < 16 {
 		t.Error("missing VIP6")
 	}
-	if len(res.Endpoint4) < 4 {
-		t.Error("missing Endpoint4")
-	}
-	if len(res.Endpoint6) < 16 {
-		t.Error("missing Endpoint6")
-	}
-	if res.Port == 0 {
-		t.Error("missing port")
-	}
-	if res.PublicKey == nil {
-		t.Error("missing PublicKey")
-	}
 
 	req = httptest.NewRequest("GET", "http://operator/v1/peer", nil)
 	w = httptest.NewRecorder()
