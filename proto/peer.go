@@ -3,12 +3,10 @@ package proto
 import (
 	"encoding/json"
 	"net"
-	"time"
 )
 
 type PeerRequest struct {
-	PublicKey []byte    `json:"public_key"`
-	Expiry    time.Time `json:"expiry"`
+	PublicKey []byte `json:"public_key"`
 }
 
 type PeerResponse struct {
