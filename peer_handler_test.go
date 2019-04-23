@@ -18,13 +18,6 @@ func TestPeerHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	js, err := json.Marshal(proto.PeerRequest{
-		PublicKey: keyToSlice(key.PublicKey()),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	pool, err := NewPool("10.2.0.0/16")
 	if err != nil {
 		t.Fatal(err)
@@ -33,34 +26,60 @@ func TestPeerHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	req := httptest.NewRequest("PUT", "http://operator/v1/peer", bytes.NewBuffer(js))
-	w := httptest.NewRecorder()
 	h := PeerHandler(dummy{}, dummy{}, pool, prefix)
-	h(w, req)
-	if w.Code != http.StatusOK {
-		t.Error(http.StatusText(w.Code))
-	}
 
-	res := proto.PeerResponse{}
-	t.Log(string(w.Body.Bytes()))
-	if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
-		t.Fatal(err)
-	}
-	if len(res.VIP4) < 4 {
-		t.Error("missing VIP4")
-	}
-	if len(res.VIP6) < 16 {
-		t.Error("missing VIP6")
-	}
+	t.Run("add peer", func(t *testing.T) {
+		js, err := json.Marshal(proto.PeerRequest{
+			PublicKey: keyToSlice(key.PublicKey()),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest("PUT", "http://operator/v1/peer", bytes.NewBuffer(js))
+		w := httptest.NewRecorder()
+		h(w, req)
+		if w.Code != http.StatusOK {
+			t.Error(http.StatusText(w.Code))
+		}
 
-	req = httptest.NewRequest("GET", "http://operator/v1/peer", nil)
-	w = httptest.NewRecorder()
-	h(w, req)
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Log(w.Code)
-		t.Error("unexpected response")
-	}
+		res := proto.PeerResponse{}
+		t.Log(string(w.Body.Bytes()))
+		if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
+			t.Fatal(err)
+		}
+		if len(res.VIP4) < 4 {
+			t.Error("missing VIP4")
+		}
+		if len(res.VIP6) < 16 {
+			t.Error("missing VIP6")
+		}
+	})
+
+	t.Run("delete peer", func(t *testing.T) {
+		t.Skip("WIP")
+		js, err := json.Marshal(proto.PeerRequest{
+			PublicKey: keyToSlice(key.PublicKey()),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest("DELETE", "http://operator/v1/peer", bytes.NewBuffer(js))
+		w := httptest.NewRecorder()
+		h(w, req)
+		if w.Code != http.StatusOK {
+			t.Error(http.StatusText(w.Code))
+		}
+	})
+
+	t.Run("error on unsupported method", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "http://operator/v1/peer", nil)
+		w := httptest.NewRecorder()
+		h(w, req)
+		if w.Code != http.StatusMethodNotAllowed {
+			t.Log(w.Code)
+			t.Error("unexpected response")
+		}
+	})
 }
 
 type dummy struct{}
