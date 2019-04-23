@@ -26,12 +26,14 @@ func TestPeerHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := PeerHandler(dummy{}, dummy{}, pool, prefix)
+	wg := dummy{}
+	h := PeerHandler(wg, dummy{}, pool, prefix)
 
 	t.Run("add peer", func(t *testing.T) {
-		js, err := json.Marshal(proto.PeerRequest{
+		pr := proto.PeerRequest{
 			PublicKey: keyToSlice(key.PublicKey()),
-		})
+		}
+		js, err := json.Marshal(&pr)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -53,10 +55,15 @@ func TestPeerHandler(t *testing.T) {
 		if len(res.VIP6) < 16 {
 			t.Error("missing VIP6")
 		}
+		if len(wg) != 1 {
+			t.Error("peer not configured")
+		}
+		if len(wg[key.PublicKey()]) != 2 {
+			t.Error("expected 1 vip4 & 1 vip6")
+		}
 	})
 
 	t.Run("delete peer", func(t *testing.T) {
-		t.Skip("WIP")
 		js, err := json.Marshal(proto.PeerRequest{
 			PublicKey: keyToSlice(key.PublicKey()),
 		})
@@ -68,6 +75,9 @@ func TestPeerHandler(t *testing.T) {
 		h(w, req)
 		if w.Code != http.StatusOK {
 			t.Error(http.StatusText(w.Code))
+		}
+		if len(wg) != 0 {
+			t.Error("peer not deleted")
 		}
 	})
 
@@ -82,10 +92,24 @@ func TestPeerHandler(t *testing.T) {
 	})
 }
 
-type dummy struct{}
+type dummy map[wgtypes.Key][]net.IPNet
 
-func (dummy) ConfigureDevice(cfg wgtypes.Config) error {
+func (d dummy) ConfigureDevice(cfg wgtypes.Config) error {
+	for _, p := range cfg.Peers {
+		if p.Remove {
+			delete(d, p.PublicKey)
+			continue
+		}
+		d[p.PublicKey] = p.AllowedIPs
+	}
 	return nil
+}
+
+func (d dummy) ResolvePeerNets(key wgtypes.Key) ([]net.IPNet, error) {
+	if d[key] == nil {
+		return nil, ErrPeerNotFound
+	}
+	return d[key], nil
 }
 
 func (dummy) PublicKey() []byte {

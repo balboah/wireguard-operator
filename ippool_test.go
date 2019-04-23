@@ -23,13 +23,19 @@ func TestPoolIP4(t *testing.T) {
 		t.Error("Expected 65533 available addresses, got", l)
 	}
 
-	pool.Free(ip)
+	if err := pool.Free(ip); err != nil {
+		t.Fatal(err)
+	}
 	if l := len(pool.available); l != 65534 {
 		t.Error("Expected 65534 available addresses, got", l)
 	}
 
 	if ip.String() != "10.2.0.1" {
 		t.Error("Wrong ip", ip)
+	}
+
+	if err = pool.Free(net.ParseIP("1.2.3.4")); err == nil {
+		t.Error("expected error trying to free invalid IP")
 	}
 }
 

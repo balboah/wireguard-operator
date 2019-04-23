@@ -10,7 +10,7 @@ import (
 // IPPool knows how to allocate IPs and free previously allocated ones.
 type IPPool interface {
 	Allocate() (net.IP, error)
-	Free(net.IP)
+	Free(net.IP) error
 }
 
 // Pool is a pool of available IP numbers for allocation.
@@ -62,11 +62,15 @@ func (p *Pool) Allocate() (ip net.IP, err error) {
 }
 
 // Free returns the IP to the pool to be used by other allocations.
-func (p *Pool) Free(ip net.IP) {
+func (p *Pool) Free(ip net.IP) error {
+	if !p.network.Contains(ip) {
+		return errors.New("IP is not part of this pool")
+	}
 	p.allocMu.Lock()
 	defer p.allocMu.Unlock()
 
 	p.available = append([]net.IP{ip}, p.available...)
+	return nil
 }
 
 // ip4To6 will prefix IPv4 with the IPv6 network to create an IPv6 address.

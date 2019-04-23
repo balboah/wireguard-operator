@@ -8,7 +8,7 @@ docker: clean
 
 .PHONY: integration_test
 integration_test:
-	@GOOS=linux GOARCH=amd64 go test -tags integration -c ./...
+	@GOOS=linux GOARCH=amd64 go test -tags integration -c .
 	@scp -q $(APP).test $(TEST_HOST):
 	@ssh -q $(TEST_HOST) sudo ./$(APP).test -test.run . $(TEST_FLAGS)
 

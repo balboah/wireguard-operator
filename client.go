@@ -2,14 +2,22 @@ package operator
 
 import (
 	"encoding/base64"
+	"errors"
+	"net"
 
 	"github.com/mdlayher/wireguardctrl"
 	"github.com/mdlayher/wireguardctrl/wgtypes"
 )
 
-// WgDeviceConfigurator configures one WireGuard interface.
+// ErrPeerNotFound is returned when unable to find a matching peer while looking up
+// information about it.
+var ErrPeerNotFound = errors.New("peer not found")
+
+// WgDeviceConfigurator configures one WireGuard interface and tracks IPs
+// of registered peers.
 type WgDeviceConfigurator interface {
 	ConfigureDevice(wgtypes.Config) error
+	ResolvePeerNets(wgtypes.Key) ([]net.IPNet, error)
 }
 
 // WgIdentity is the information required for a remote peer
@@ -71,6 +79,19 @@ func NewWgClient(link *WgLink, port int, pk string) (*WgClient, error) {
 
 func (c *WgClient) ConfigureDevice(cfg wgtypes.Config) error {
 	return c.Client.ConfigureDevice(c.link.Name, cfg)
+}
+
+func (c *WgClient) ResolvePeerNets(key wgtypes.Key) ([]net.IPNet, error) {
+	d, err := c.Device(c.link.Name)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range d.Peers {
+		if p.PublicKey == key {
+			return p.AllowedIPs, nil
+		}
+	}
+	return nil, ErrPeerNotFound
 }
 
 func (c *WgClient) PublicKey() []byte {
