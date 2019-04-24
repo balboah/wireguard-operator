@@ -47,6 +47,26 @@ func NewPool(cidr string) (*Pool, error) {
 	}, nil
 }
 
+// Remove selected IPs from the available pool.
+func (p *Pool) Remove(ips ...net.IP) error {
+	p.allocMu.Lock()
+	defer p.allocMu.Unlock()
+
+	all := p.available
+	for _, ip := range ips {
+		if !p.network.Contains(ip) {
+			return errors.New("IP is not part of this pool")
+		}
+		for n, a := range p.available {
+			if a.Equal(ip) {
+				all = append(all[:n], all[n+1:]...)
+			}
+		}
+	}
+	p.available = all
+	return nil
+}
+
 // Allocate assigns a new IP to the pool for use.
 func (p *Pool) Allocate() (ip net.IP, err error) {
 	p.allocMu.Lock()

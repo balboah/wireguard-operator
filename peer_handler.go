@@ -2,6 +2,7 @@ package operator
 
 import (
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"strings"
@@ -38,6 +39,19 @@ func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p *Pool, ip6prefix *ne
 			}); err != nil {
 				log.Error("PeerHandler.PUT: ", err)
 				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		case "POST":
+			js := proto.PeerReplaceRequest{}
+			if err := json.NewDecoder(req.Body).Decode(&js); err != nil {
+				log.Debug("PeerHandler.POST: ", err)
+				rw.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			if err := replacePeers(c, js.Peers, p, ip6prefix); err != nil {
+				log.Error("PeerHandler.POST: ", err)
+				rw.WriteHeader(http.StatusBadRequest)
 				return
 			}
 		case "DELETE":
@@ -102,6 +116,52 @@ func putPeer(c WgDeviceConfigurator, publicKey []byte, p *Pool, ip6prefix *net.I
 	return ip4, ip6, err
 }
 
+func replacePeers(c WgDeviceConfigurator, replacements []proto.PeerReplacement, p *Pool, ip6prefix *net.IPNet) error {
+	wgPeers := make([]wgtypes.PeerConfig, len(replacements))
+	allocatedIPs := make([]net.IP, len(replacements))
+	for n, r := range replacements {
+		ip4 := net.IP{}
+		ip6 := net.IP{}
+		if len(r.VIPs) != 2 {
+			return errors.New("invalid replacement: IPs length")
+		}
+		for _, ip := range r.VIPs {
+			if ip.To4() != nil {
+				ip4 = ip
+				continue
+			}
+			ip6 = ip
+		}
+		if ip4.To4() == nil {
+			return errors.New("invalid replacement: missing IPv4")
+		}
+		if ip6.To16() == nil {
+			return errors.New("invalid replacement: missing IPv6")
+		}
+		allocatedIPs[n] = ip4
+		pk, err := wgtypes.NewKey(r.PublicKey)
+		if err != nil {
+			return err
+		}
+		wgPeers[n] = wgtypes.PeerConfig{
+			PublicKey: pk,
+			AllowedIPs: []net.IPNet{
+				{IP: ip4, Mask: net.CIDRMask(32, 32)},
+				{IP: ip6, Mask: net.CIDRMask(128, 128)},
+			},
+			ReplaceAllowedIPs: true,
+		}
+	}
+	if err := p.Remove(allocatedIPs...); err != nil {
+		return err
+	}
+
+	return c.ConfigureDevice(wgtypes.Config{
+		Peers:        wgPeers,
+		ReplacePeers: true,
+	})
+}
+
 // deletePeer frees all IPs in the pool and then removes the peer from wg.
 func deletePeer(c WgDeviceConfigurator, publicKey []byte, p *Pool) error {
 	pk, err := wgtypes.NewKey(publicKey)
@@ -132,7 +192,7 @@ func freeAll(c WgDeviceConfigurator, publicKey wgtypes.Key, p *Pool, n ...net.IP
 		return err
 	}
 	for _, n := range nets {
-		if len(n.IP) == net.IPv4len {
+		if n.IP.To4() != nil {
 			// ip6 is derived from ip4 thus don't need to be free'd from pool.
 			if err := p.Free(n.IP.To4()); err != nil {
 				return err

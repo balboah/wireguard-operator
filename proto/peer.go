@@ -21,3 +21,12 @@ func (r *PeerResponse) String() string {
 	}
 	return string(b)
 }
+
+type PeerReplaceRequest struct {
+	Peers []PeerReplacement `json:"peers"`
+}
+
+type PeerReplacement struct {
+	PublicKey []byte
+	VIPs      []net.IP
+}

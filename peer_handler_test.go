@@ -81,6 +81,40 @@ func TestPeerHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("replace peers", func(t *testing.T) {
+		peers := []proto.PeerReplacement{
+			{
+				PublicKey: pub("1y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
+				VIPs: []net.IP{
+					net.ParseIP("10.2.0.1"),
+					net.ParseIP("fd:b10c:ad:add1:de1e:7ed::1"),
+				},
+			},
+			{
+				PublicKey: pub("2y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
+				VIPs: []net.IP{
+					net.ParseIP("10.2.0.2"),
+					net.ParseIP("fd:b10c:ad:add1:de1e:7ed::2"),
+				},
+			},
+		}
+		js, err := json.Marshal(proto.PeerReplaceRequest{
+			Peers: peers,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest("POST", "http://operator/v1/peer", bytes.NewBuffer(js))
+		w := httptest.NewRecorder()
+		h(w, req)
+		if w.Code != http.StatusOK {
+			t.Error(http.StatusText(w.Code))
+		}
+		if len(wg) != len(peers) {
+			t.Error("peers not replaced")
+		}
+	})
+
 	t.Run("error on unsupported method", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "http://operator/v1/peer", nil)
 		w := httptest.NewRecorder()
@@ -92,9 +126,22 @@ func TestPeerHandler(t *testing.T) {
 	})
 }
 
+func pub(b64 string) []byte {
+	b, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 type dummy map[wgtypes.Key][]net.IPNet
 
 func (d dummy) ConfigureDevice(cfg wgtypes.Config) error {
+	if cfg.ReplacePeers {
+		for k := range d {
+			delete(d, k)
+		}
+	}
 	for _, p := range cfg.Peers {
 		if p.Remove {
 			delete(d, p.PublicKey)

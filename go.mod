@@ -4,6 +4,7 @@ require (
 	github.com/mdlayher/genetlink v0.0.0-20190420033754-198ed5902e0b // indirect
 	github.com/mdlayher/netlink v0.0.0-20190422194421-71f5664c1cb5 // indirect
 	github.com/mdlayher/wireguardctrl v0.0.0-20190419142446-a4a944b88a6b
+	github.com/prometheus/common v0.3.0
 	github.com/sirupsen/logrus v1.3.0
 	github.com/vishvananda/netlink v1.0.0
 	github.com/vishvananda/netns v0.0.0-20180720170159-13995c7128cc // indirect
