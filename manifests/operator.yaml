@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: operator
-        image: eu.gcr.io/PROJECT_ID/wireguard-operator:latest
+        image: gcr.io/PROJECT_ID/wireguard-operator:latest
         imagePullPolicy: IfNotPresent
         resources:
           requests:

@@ -4,7 +4,7 @@ steps:
   args: [
     'build',
     '-f', 'Dockerfile.operator',
-    '-t', 'eu.gcr.io/$PROJECT_ID/wireguard-operator:latest',
+    '-t', 'gcr.io/$PROJECT_ID/wireguard-operator:latest',
     '.'
   ]
 - name: 'gcr.io/cloud-builders/docker'
@@ -12,10 +12,10 @@ steps:
   args: [
     'build',
     '-f', 'Dockerfile.wireguard',
-    '-t', 'eu.gcr.io/$PROJECT_ID/wireguard:latest',
+    '-t', 'gcr.io/$PROJECT_ID/wireguard:latest',
     '.'
   ]
   waitFor: '-'
 images:
-  - 'eu.gcr.io/$PROJECT_ID/wireguard-operator:latest'
-  - 'eu.gcr.io/$PROJECT_ID/wireguard:latest'
+  - 'gcr.io/$PROJECT_ID/wireguard-operator:latest'
+  - 'gcr.io/$PROJECT_ID/wireguard:latest'

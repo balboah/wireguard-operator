@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: wireguard
-        image: eu.gcr.io/PROJECT_ID/wireguard:latest
+        image: gcr.io/PROJECT_ID/wireguard:latest
         imagePullPolicy: Always
         resources:
           requests:
