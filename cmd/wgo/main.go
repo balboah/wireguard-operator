@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"flag"
+	"io/ioutil"
 	"net"
 	"net/http"
 
@@ -21,7 +22,7 @@ func main() {
 		"interface-delete", false, "delete specificed interface on exit")
 	wgPort := flag.Int("wireguard-port", 51820, "port for incoming WireGuard traffic")
 	wgKey := flag.String(
-		"wireguard-private-key", "", "private key as base64 string, or empty to generate")
+		"wireguard-private-key-file", "", "file with base64 encoded private key")
 	listenAddr := flag.String(
 		"listen-addr", "0.0.0.0:8080", "listen address for API traffic")
 	ip4Addr := flag.String(
@@ -58,7 +59,11 @@ func main() {
 		log.Fatal("main.AddrAdd: ", err)
 	}
 
-	c, err := operator.NewWgClient(wg, *wgPort, *wgKey)
+	key, err := ioutil.ReadFile(*wgKey)
+	if err != nil {
+		log.Fatal("main.ReadFile: ", err)
+	}
+	c, err := operator.NewWgClient(wg, *wgPort, string(key))
 	if err != nil {
 		log.Fatal("main.NewWgClient: ", err)
 	}
