@@ -56,7 +56,7 @@ func TestPoolIP4(t *testing.T) {
 }
 
 func TestIP4To6(t *testing.T) {
-	_, prefix, err := net.ParseCIDR("fd:b10c:ad:add1:de1e:7ed::/112")
+	_, prefix, err := net.ParseCIDR("fd:b10c:ad:add1:de1e:7ed::/96")
 	if err != nil {
 		t.Fatal(err)
 	}
