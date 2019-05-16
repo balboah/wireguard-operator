@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net"
 
-	"github.com/mdlayher/wireguardctrl"
-	"github.com/mdlayher/wireguardctrl/wgtypes"
+	"golang.zx2c4.com/wireguard/wgctrl"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 // ErrPeerNotFound is returned when unable to find a matching peer while looking up
@@ -27,17 +27,17 @@ type WgIdentity interface {
 	Port() int
 }
 
-// WgClient is a thin wrapper around wireguardctrl for binding config
+// WgClient is a thin wrapper around wgctrl for binding config
 // to a specific interface link.
 type WgClient struct {
 	link       *WgLink
 	port       int
 	privateKey wgtypes.Key
-	*wireguardctrl.Client
+	*wgctrl.Client
 }
 
 func NewWgClient(link *WgLink, port int, pk string) (*WgClient, error) {
-	wg, err := wireguardctrl.New()
+	wg, err := wgctrl.New()
 	if err != nil {
 		return nil, err
 	}

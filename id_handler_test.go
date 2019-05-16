@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/balboah/wireguard-operator/proto"
-	"github.com/mdlayher/wireguardctrl/wgtypes"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 func TestIDHandler(t *testing.T) {

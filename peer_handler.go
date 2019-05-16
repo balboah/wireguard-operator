@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/balboah/wireguard-operator/proto"
-	"github.com/mdlayher/wireguardctrl/wgtypes"
 	log "github.com/sirupsen/logrus"
+	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
 func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p *Pool, ip6prefix *net.IPNet) http.HandlerFunc {
