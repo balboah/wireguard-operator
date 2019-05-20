@@ -14,6 +14,11 @@ import (
 )
 
 func TestPeerHandler(t *testing.T) {
+	wg := dummy{}
+	testPeerHandler(t, wg)
+}
+
+func testPeerHandler(t *testing.T, wg WgDeviceConfigurator) {
 	key, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
 		t.Fatal(err)
@@ -26,7 +31,6 @@ func TestPeerHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	wg := dummy{}
 	h := PeerHandler(wg, dummy{}, pool, prefix)
 
 	t.Run("add peer", func(t *testing.T) {
@@ -55,10 +59,12 @@ func TestPeerHandler(t *testing.T) {
 		if len(res.VIP6) < 16 {
 			t.Error("missing VIP6")
 		}
-		if len(wg) != 1 {
-			t.Error("peer not configured")
+		nets, err := wg.ResolvePeerNets(key.PublicKey())
+		if err != nil {
+			t.Log(wg)
+			t.Fatal(err)
 		}
-		if len(wg[key.PublicKey()]) != 2 {
+		if len(nets) != 2 {
 			t.Error("expected 1 vip4 & 1 vip6")
 		}
 	})
@@ -76,31 +82,36 @@ func TestPeerHandler(t *testing.T) {
 		if w.Code != http.StatusOK {
 			t.Error(http.StatusText(w.Code))
 		}
-		if len(wg) != 0 {
+
+		peers, err := wg.Peers()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(peers) != 0 {
 			t.Error("peer not deleted")
 		}
 	})
 
 	t.Run("replace peers", func(t *testing.T) {
-		peers := []proto.PeerReplacement{
-			{
-				PublicKey: pub("1y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
-				VIPs: []net.IP{
-					net.ParseIP("10.2.0.1"),
-					net.ParseIP("fd:b10c:ad:add1:de1e:7ed::1"),
+		replaceReq := proto.PeerReplaceRequest{
+			Peers: []proto.PeerReplacement{
+				{
+					PublicKey: pub("1y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
+					VIPs: []net.IP{
+						net.ParseIP("10.2.0.1"),
+						net.ParseIP("fd:b10c:ad:add1:de1e:7ed::1"),
+					},
 				},
-			},
-			{
-				PublicKey: pub("2y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
-				VIPs: []net.IP{
-					net.ParseIP("10.2.0.2"),
-					net.ParseIP("fd:b10c:ad:add1:de1e:7ed::2"),
+				{
+					PublicKey: pub("2y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
+					VIPs: []net.IP{
+						net.ParseIP("10.2.0.2"),
+						net.ParseIP("fd:b10c:ad:add1:de1e:7ed::2"),
+					},
 				},
 			},
 		}
-		js, err := json.Marshal(proto.PeerReplaceRequest{
-			Peers: peers,
-		})
+		js, err := json.Marshal(replaceReq)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -110,7 +121,11 @@ func TestPeerHandler(t *testing.T) {
 		if w.Code != http.StatusOK {
 			t.Error(http.StatusText(w.Code))
 		}
-		if len(wg) != len(peers) {
+		peers, err := wg.Peers()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(peers) != 2 {
 			t.Error("peers not replaced")
 		}
 	})
@@ -134,7 +149,7 @@ func pub(b64 string) []byte {
 	return b
 }
 
-type dummy map[wgtypes.Key][]net.IPNet
+type dummy map[wgtypes.Key]wgtypes.Peer
 
 func (d dummy) ConfigureDevice(cfg wgtypes.Config) error {
 	if cfg.ReplacePeers {
@@ -147,16 +162,29 @@ func (d dummy) ConfigureDevice(cfg wgtypes.Config) error {
 			delete(d, p.PublicKey)
 			continue
 		}
-		d[p.PublicKey] = p.AllowedIPs
+		d[p.PublicKey] = wgtypes.Peer{
+			PublicKey: p.PublicKey,
+			AllowedIPs: p.AllowedIPs,
+		}
 	}
 	return nil
 }
 
+func (d dummy) Peers() ([]wgtypes.Peer, error) {
+	peers := []wgtypes.Peer{}
+	for _, p := range d {
+		peers = append(peers, p)
+	}
+	return peers, nil
+}
+
 func (d dummy) ResolvePeerNets(key wgtypes.Key) ([]net.IPNet, error) {
-	if d[key] == nil {
+	p, ok := d[key]
+	if !ok {
 		return nil, ErrPeerNotFound
 	}
-	return d[key], nil
+
+	return p.AllowedIPs, nil
 }
 
 func (dummy) PublicKey() []byte {

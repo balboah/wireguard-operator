@@ -18,6 +18,7 @@ var ErrPeerNotFound = errors.New("peer not found")
 type WgDeviceConfigurator interface {
 	ConfigureDevice(wgtypes.Config) error
 	ResolvePeerNets(wgtypes.Key) ([]net.IPNet, error)
+	Peers() ([]wgtypes.Peer, error)
 }
 
 // WgIdentity is the information required for a remote peer
@@ -85,6 +86,14 @@ func (c *WgClient) ResolvePeerNets(key wgtypes.Key) ([]net.IPNet, error) {
 		}
 	}
 	return nil, ErrPeerNotFound
+}
+
+func (c *WgClient) Peers() ([]wgtypes.Peer, error) {
+	d, err := c.Device(c.link.Name)
+	if err != nil {
+		return nil, err
+	}
+	return d.Peers, nil
 }
 
 func (c *WgClient) PublicKey() []byte {
