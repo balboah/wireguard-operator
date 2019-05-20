@@ -11,6 +11,7 @@ import (
 type IPPool interface {
 	Allocate() (net.IP, error)
 	Free(net.IP) error
+	Remove(...net.IP) error
 }
 
 // Pool is a pool of available IP numbers for allocation.

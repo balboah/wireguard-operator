@@ -68,7 +68,7 @@ func main() {
 		log.Fatal("main.NewWgClient: ", err)
 	}
 
-	p, err := operator.NewPool(*ip4Addr)
+	p, err := poolWithMetrics(operator.NewPool(*ip4Addr))
 	if err != nil {
 		log.Fatal("main.NewPool: ", err)
 	}

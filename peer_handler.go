@@ -12,7 +12,7 @@ import (
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 )
 
-func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p *Pool, ip6prefix *net.IPNet) http.HandlerFunc {
+func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p IPPool, ip6prefix *net.IPNet) http.HandlerFunc {
 	// FIXME: do we need mutex for client?
 	return func(rw http.ResponseWriter, req *http.Request) {
 		defer req.Body.Close()
@@ -80,7 +80,7 @@ func PeerHandler(c WgDeviceConfigurator, wgID WgIdentity, p *Pool, ip6prefix *ne
 }
 
 // putPeer appends the public key with a list of allowed IP adresses.
-func putPeer(c WgDeviceConfigurator, publicKey []byte, p *Pool, ip6prefix *net.IPNet) (ip4, ip6 net.IP, err error) {
+func putPeer(c WgDeviceConfigurator, publicKey []byte, p IPPool, ip6prefix *net.IPNet) (ip4, ip6 net.IP, err error) {
 	pk, err := wgtypes.NewKey(publicKey)
 	if err != nil {
 		return nil, nil, err
@@ -116,7 +116,7 @@ func putPeer(c WgDeviceConfigurator, publicKey []byte, p *Pool, ip6prefix *net.I
 	return ip4, ip6, err
 }
 
-func replacePeers(c WgDeviceConfigurator, replacements []proto.PeerReplacement, p *Pool, ip6prefix *net.IPNet) error {
+func replacePeers(c WgDeviceConfigurator, replacements []proto.PeerReplacement, p IPPool, ip6prefix *net.IPNet) error {
 	wgPeers := make([]wgtypes.PeerConfig, len(replacements))
 	allocatedIPs := make([]net.IP, len(replacements))
 	for n, r := range replacements {
@@ -163,7 +163,7 @@ func replacePeers(c WgDeviceConfigurator, replacements []proto.PeerReplacement, 
 }
 
 // deletePeer frees all IPs in the pool and then removes the peer from wg.
-func deletePeer(c WgDeviceConfigurator, publicKey []byte, p *Pool) error {
+func deletePeer(c WgDeviceConfigurator, publicKey []byte, p IPPool) error {
 	pk, err := wgtypes.NewKey(publicKey)
 	if err != nil {
 		return err
@@ -186,7 +186,7 @@ func deletePeer(c WgDeviceConfigurator, publicKey []byte, p *Pool) error {
 }
 
 // freeAll loops all IP networks for a peer and frees IPv4 addresses from the pool.
-func freeAll(c WgDeviceConfigurator, publicKey wgtypes.Key, p *Pool, n ...net.IPNet) error {
+func freeAll(c WgDeviceConfigurator, publicKey wgtypes.Key, p IPPool, n ...net.IPNet) error {
 	nets, err := c.ResolvePeerNets(publicKey)
 	if err != nil {
 		return err
