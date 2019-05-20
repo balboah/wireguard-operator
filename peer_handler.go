@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net"
@@ -117,6 +118,7 @@ func putPeer(c WgDeviceConfigurator, publicKey []byte, p IPPool, ip6prefix *net.
 }
 
 func replacePeers(c WgDeviceConfigurator, replacements []proto.PeerReplacement, p IPPool, ip6prefix *net.IPNet) error {
+	// Validate input and list all IPs to allocate in pool.
 	wgPeers := make([]wgtypes.PeerConfig, len(replacements))
 	allocatedIPs := make([]net.IP, len(replacements))
 	for n, r := range replacements {
@@ -150,6 +152,28 @@ func replacePeers(c WgDeviceConfigurator, replacements []proto.PeerReplacement, 
 				{IP: ip6, Mask: net.CIDRMask(128, 128)},
 			},
 			ReplaceAllowedIPs: true,
+		}
+	}
+	all, err := c.Peers()
+	if err != nil {
+		return err
+	}
+
+	// List all IPs to free from pool as peer is not part of replacements.
+FindRemovedPeers:
+	for _, peer := range all {
+		for _, r := range replacements {
+			if bytes.Equal(r.PublicKey, keyToSlice(peer.PublicKey)) {
+				continue FindRemovedPeers
+			}
+		}
+		for _, n := range peer.AllowedIPs {
+			if ip := n.IP.To4(); ip != nil {
+				// ip6 is derived from ip4 thus don't need to be free'd from pool.
+				if err := p.Free(ip); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	if err := p.Remove(allocatedIPs...); err != nil {

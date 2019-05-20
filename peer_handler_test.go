@@ -53,11 +53,93 @@ func testPeerHandler(t *testing.T, wg WgDeviceConfigurator) {
 		if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
 			t.Fatal(err)
 		}
-		if len(res.VIP4) < 4 {
-			t.Error("missing VIP4")
+		if !res.VIP4.Equal(net.ParseIP("10.2.0.1")) {
+			t.Error("invalid VIP4")
 		}
-		if len(res.VIP6) < 16 {
-			t.Error("missing VIP6")
+		if !res.VIP6.Equal(net.ParseIP("fd:b10c:ad:add1:de1e:7ed:a02:1")) {
+			t.Error("invalid VIP6")
+		}
+		nets, err := wg.ResolvePeerNets(key.PublicKey())
+		if err != nil {
+			t.Log(wg)
+			t.Fatal(err)
+		}
+		if len(nets) != 2 {
+			t.Error("expected 1 vip4 & 1 vip6")
+		}
+		if l := len(pool.available); l != 65534-1 {
+			t.Error("invalid available in pool, ", l)
+		}
+	})
+
+	t.Run("replace peers", func(t *testing.T) {
+		replaceReq := proto.PeerReplaceRequest{
+			Peers: []proto.PeerReplacement{
+				{
+					PublicKey: pub("1y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
+					VIPs: []net.IP{
+						net.ParseIP("10.2.0.2"),
+						net.ParseIP("fd:b10c:ad:add1:de1e:7ed::1"),
+					},
+				},
+				{
+					PublicKey: pub("2y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
+					VIPs: []net.IP{
+						net.ParseIP("10.2.0.3"),
+						net.ParseIP("fd:b10c:ad:add1:de1e:7ed::2"),
+					},
+				},
+			},
+		}
+		js, err := json.Marshal(replaceReq)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest("POST", "http://operator/v1/peer", bytes.NewBuffer(js))
+		w := httptest.NewRecorder()
+		h(w, req)
+		if w.Code != http.StatusOK {
+			t.Error(http.StatusText(w.Code))
+		}
+		peers, err := wg.Peers()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(peers) != 2 {
+			t.Error("peers not replaced")
+		}
+		if l := len(pool.available); l != 65534-2 {
+			t.Error("invalid available in pool, ", l)
+		}
+	})
+
+	t.Run("add replaced peer again", func(t *testing.T) {
+		pr := proto.PeerRequest{
+			PublicKey: keyToSlice(key.PublicKey()),
+		}
+		js, err := json.Marshal(&pr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest("PUT", "http://operator/v1/peer", bytes.NewBuffer(js))
+		w := httptest.NewRecorder()
+		h(w, req)
+		if w.Code != http.StatusOK {
+			t.Error(http.StatusText(w.Code))
+		}
+
+		res := proto.PeerResponse{}
+		t.Log(string(w.Body.Bytes()))
+		if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
+			t.Fatal(err)
+		}
+		if !res.VIP4.Equal(net.ParseIP("10.2.0.1")) {
+			t.Log(res.VIP4)
+			t.Error("expected re-used VIP4")
+		}
+		if !res.VIP6.Equal(net.ParseIP("fd:b10c:ad:add1:de1e:7ed:a02:1")) {
+			t.Log(res.VIP6)
+			t.Error("expected re-used VIP6")
 		}
 		nets, err := wg.ResolvePeerNets(key.PublicKey())
 		if err != nil {
@@ -87,46 +169,9 @@ func testPeerHandler(t *testing.T, wg WgDeviceConfigurator) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(peers) != 0 {
+		if n := len(peers); n != 2 {
+			t.Log(n)
 			t.Error("peer not deleted")
-		}
-	})
-
-	t.Run("replace peers", func(t *testing.T) {
-		replaceReq := proto.PeerReplaceRequest{
-			Peers: []proto.PeerReplacement{
-				{
-					PublicKey: pub("1y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
-					VIPs: []net.IP{
-						net.ParseIP("10.2.0.1"),
-						net.ParseIP("fd:b10c:ad:add1:de1e:7ed::1"),
-					},
-				},
-				{
-					PublicKey: pub("2y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
-					VIPs: []net.IP{
-						net.ParseIP("10.2.0.2"),
-						net.ParseIP("fd:b10c:ad:add1:de1e:7ed::2"),
-					},
-				},
-			},
-		}
-		js, err := json.Marshal(replaceReq)
-		if err != nil {
-			t.Fatal(err)
-		}
-		req := httptest.NewRequest("POST", "http://operator/v1/peer", bytes.NewBuffer(js))
-		w := httptest.NewRecorder()
-		h(w, req)
-		if w.Code != http.StatusOK {
-			t.Error(http.StatusText(w.Code))
-		}
-		peers, err := wg.Peers()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(peers) != 2 {
-			t.Error("peers not replaced")
 		}
 	})
 
@@ -163,7 +208,7 @@ func (d dummy) ConfigureDevice(cfg wgtypes.Config) error {
 			continue
 		}
 		d[p.PublicKey] = wgtypes.Peer{
-			PublicKey: p.PublicKey,
+			PublicKey:  p.PublicKey,
 			AllowedIPs: p.AllowedIPs,
 		}
 	}
