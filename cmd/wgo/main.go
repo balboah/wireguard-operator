@@ -24,7 +24,7 @@ func main() {
 	wgKey := flag.String(
 		"wireguard-private-key-file", "", "file with base64 encoded private key")
 	listenAddr := flag.String(
-		"listen-addr", "0.0.0.0:8080", "listen address for API traffic")
+		"listen-addr", "127.0.0.1:8080", "listen address for API traffic")
 	ip4Addr := flag.String(
 		"ip4-addr", "10.143.0.0/16", "tunnel IPv4 network")
 	ip6Addr := flag.String(
@@ -72,6 +72,7 @@ func main() {
 	if err != nil {
 		log.Fatal("main.NewPool: ", err)
 	}
+
 	_, net6, err := net.ParseCIDR(*ip6Addr)
 	if err != nil {
 		log.Fatal("main.ParseCIDR6: ", err)
