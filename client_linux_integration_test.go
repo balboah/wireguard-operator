@@ -10,7 +10,7 @@ import (
 )
 
 func TestWgClient(t *testing.T) {
-	wg0, err := NewWgLink("wg0")
+	wg0, err := NewWgLink("wgo-test")
 	if err != nil {
 		t.Fatal(err)
 	}

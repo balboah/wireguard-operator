@@ -64,13 +64,6 @@ func NewWgClient(link *WgLink, port int, pk string) (*WgClient, error) {
 		PrivateKey:   &c.privateKey,
 		ListenPort:   &port,
 		ReplacePeers: false,
-		// Peers: []wgtypes.PeerConfig{
-		// 	{
-		// 		PublicKey:         peerKey,
-		// 		ReplaceAllowedIPs: true,
-		// 		AllowedIPs:        ips,
-		// 	},
-		// },
 	}); err != nil {
 		return nil, err
 	}
