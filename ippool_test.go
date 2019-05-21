@@ -56,12 +56,12 @@ func TestPoolIP4(t *testing.T) {
 }
 
 func TestIP4To6(t *testing.T) {
-	_, prefix, err := net.ParseCIDR("fd:b10c:ad:add1:de1e:7ed::/96")
+	_, prefix, err := net.ParseCIDR("fdad:b10c:a::/48")
 	if err != nil {
 		t.Fatal(err)
 	}
 	ip6 := ip4To6(net.IP{10, 1, 2, 3}, prefix)
-	if s := net.IP(ip6).String(); s != "fd:b10c:ad:add1:de1e:7ed:a01:203" {
+	if s := net.IP(ip6).String(); s != "fdad:b10c:a::a01:203" {
 		t.Log(s)
 		t.Error("invalid IP")
 	}

@@ -28,7 +28,7 @@ func main() {
 	ip4Addr := flag.String(
 		"ip4-addr", "10.143.0.0/16", "tunnel IPv4 network")
 	ip6Addr := flag.String(
-		"ip6-addr", "fd:b10c:ad:add1:de1e:7ed::/96", "tunnel IPv6 network")
+		"ip6-addr", "fdad:b10c:a::/48", "tunnel IPv6 network")
 	flag.Parse()
 
 	if lvl, err := log.ParseLevel(*logLevel); err != nil {

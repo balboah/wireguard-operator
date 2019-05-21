@@ -27,7 +27,7 @@ func testPeerHandler(t *testing.T, wg WgDeviceConfigurator) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, prefix, err := net.ParseCIDR("fd:b10c:ad:add1:de1e:7ed::/96")
+	_, prefix, err := net.ParseCIDR("fdad:b10c:a::/48")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func testPeerHandler(t *testing.T, wg WgDeviceConfigurator) {
 		if !res.VIP4.Equal(net.ParseIP("10.2.0.1")) {
 			t.Error("invalid VIP4")
 		}
-		if !res.VIP6.Equal(net.ParseIP("fd:b10c:ad:add1:de1e:7ed:a02:1")) {
+		if !res.VIP6.Equal(net.ParseIP("fdad:b10c:a::a02:1")) {
 			t.Error("invalid VIP6")
 		}
 		nets, err := wg.ResolvePeerNets(key.PublicKey())
@@ -79,14 +79,14 @@ func testPeerHandler(t *testing.T, wg WgDeviceConfigurator) {
 					PublicKey: pub("1y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
 					VIPs: []net.IP{
 						net.ParseIP("10.2.0.2"),
-						net.ParseIP("fd:b10c:ad:add1:de1e:7ed::1"),
+						net.ParseIP("fdad:b10c:a::1"),
 					},
 				},
 				{
 					PublicKey: pub("2y7aZNACS4ZDyNgQJN7/vtEUrj0lHWmIwJQO5VgrigM="),
 					VIPs: []net.IP{
 						net.ParseIP("10.2.0.3"),
-						net.ParseIP("fd:b10c:ad:add1:de1e:7ed::2"),
+						net.ParseIP("fdad:b10c:a::2"),
 					},
 				},
 			},
@@ -137,7 +137,7 @@ func testPeerHandler(t *testing.T, wg WgDeviceConfigurator) {
 			t.Log(res.VIP4)
 			t.Error("expected re-used VIP4")
 		}
-		if !res.VIP6.Equal(net.ParseIP("fd:b10c:ad:add1:de1e:7ed:a02:1")) {
+		if !res.VIP6.Equal(net.ParseIP("fdad:b10c:a::a02:1")) {
 			t.Log(res.VIP6)
 			t.Error("expected re-used VIP6")
 		}
