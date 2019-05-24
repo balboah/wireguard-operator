@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	operator "github.com/balboah/wireguard-operator"
+	joonix "github.com/joonix/log"
 	log "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 )
@@ -29,8 +30,12 @@ func main() {
 		"ip4-addr", "10.143.0.0/16", "tunnel IPv4 network")
 	ip6Addr := flag.String(
 		"ip6-addr", "fdad:b10c:a::/48", "tunnel IPv6 network")
+	logJSON := flag.Bool("log-json", true, "log json compatible with stackdriver agent")
 	flag.Parse()
 
+	if *logJSON {
+		log.SetFormatter(joonix.NewFormatter())
+	}
 	if lvl, err := log.ParseLevel(*logLevel); err != nil {
 		log.Fatal(err)
 	} else {
