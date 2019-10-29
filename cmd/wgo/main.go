@@ -24,6 +24,12 @@ func main() {
 	wgPort := flag.Int("wireguard-port", 51820, "port for incoming WireGuard traffic")
 	wgKey := flag.String(
 		"wireguard-private-key-file", "", "file with base64 encoded private key")
+	tlsKey := flag.String(
+		"my-private-key-file", "", "TLS private key file, enables mTLS mode")
+	tlsCert := flag.String(
+		"my-cert-file", "", "TLS public certificate file, required for mTLS mode")
+	clientCert := flag.String(
+		"client-cert-file", "", "TLS public certificate for connecting clients, required for mTLS mode")
 	listenAddr := flag.String(
 		"listen-addr", "127.0.0.1:8080", "listen address for API traffic")
 	ip4Addr := flag.String(
@@ -92,7 +98,12 @@ func main() {
 
 	http.HandleFunc("/v1/peer", operator.PeerHandler(c, id, p, net6))
 	http.HandleFunc("/v1/id", operator.IDHandler(id))
-	if err := http.ListenAndServe(*listenAddr, nil); err != nil {
+	if *tlsKey != "" {
+		err = listenAndServeMutualTLS(*listenAddr, *clientCert, *tlsCert, *tlsKey)
+	} else {
+		err = http.ListenAndServe(*listenAddr, nil)
+	}
+	if err != nil {
 		log.Fatal(err)
 	}
 }

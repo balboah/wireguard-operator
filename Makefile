@@ -6,6 +6,10 @@ APP?=wireguard-operator
 docker: clean
 	gcloud builds submit --config cloudbuild.yaml .
 
+.PHONY: local_docker
+local_docker:
+	docker build -t $(APP) -f Dockerfile.operator .
+
 .PHONY: integration_test
 integration_test:
 	@GOOS=linux GOARCH=amd64 go test -tags integration -c .
