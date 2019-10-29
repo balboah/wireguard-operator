@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/balboah/wireguard-operator/proto"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
@@ -24,6 +25,7 @@ func TestIDHandler(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "http://operator/v1/id", nil)
 	w := httptest.NewRecorder()
+	started := time.Now()
 	h := IDHandler(id)
 	h(w, req)
 	if w.Code != http.StatusOK {
@@ -40,6 +42,9 @@ func TestIDHandler(t *testing.T) {
 	}
 	if res.Port != 1337 {
 		t.Error("invalid port")
+	}
+	if res.Started.Before(started) {
+		t.Error("invalid started timestamp")
 	}
 }
 
