@@ -7,6 +7,9 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	operator "github.com/balboah/wireguard-operator"
 	joonix "github.com/joonix/log"
 	log "github.com/sirupsen/logrus"
@@ -83,6 +86,7 @@ func main() {
 	if err != nil {
 		log.Fatal("main.NewPool: ", err)
 	}
+	prometheus.MustRegister(p.metricsP)
 
 	_, net6, err := net.ParseCIDR(*ip6Addr)
 	if err != nil {
@@ -96,6 +100,7 @@ func main() {
 	log.Infof("WireGuard Operator version %s", version)
 	log.Infof("Public key: %s", base64.StdEncoding.EncodeToString(c.PublicKey()))
 
+	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/v1/peer", operator.PeerHandler(c, id, p, net6))
 	http.HandleFunc("/v1/id", operator.IDHandler(id))
 	if *tlsKey != "" {
