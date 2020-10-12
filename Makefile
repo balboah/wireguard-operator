@@ -1,14 +1,15 @@
 TEST_HOST?=35.228.23.66
 TEST_FLAGS?=-test.v
 APP?=wireguard-operator
+PROJECT?=$(shell gcloud -q config get-value project)
 
 .PHONY: docker
 docker: clean
-	gcloud builds submit --config cloudbuild.yaml .
+	gcloud builds submit --tag gcr.io/$(PROJECT)/$(APP):latest --project $(PROJECT) .
 
 .PHONY: local_docker
 local_docker:
-	docker build -t $(APP) -f Dockerfile.operator .
+	docker build -t $(APP) .
 
 .PHONY: integration_test
 integration_test:
