@@ -1,0 +1,10 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'buildx', 'create', '--name', 'builder', '--use' ]
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'buildx', "build", "--platform", "linux/arm64/v8,linux/amd64",
+    '-t', 'gcr.io/$PROJECT_ID/wireguard-operator:$TAG_NAME',
+    '.',
+    '--push',
+  ]

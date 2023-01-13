@@ -1,19 +1,20 @@
-TEST_HOST?=35.228.23.66
+TEST_HOST?=192.168.64.80
 TEST_FLAGS?=-test.v
 APP?=wireguard-operator
 PROJECT?=$(shell gcloud -q config get-value project)
+VERSION?=$(shell git describe --abbrev=4 --always --tags --dirty)
 
 .PHONY: docker
 docker: clean
-	gcloud builds submit --tag gcr.io/$(PROJECT)/$(APP):latest --project $(PROJECT) .
+	gcloud builds submit --config cloudbuild.yaml --substitutions=TAG_NAME=$(VERSION) --project $(PROJECT) .
 
 .PHONY: local_docker
 local_docker:
-	docker build -t $(APP) .
+	docker buildx build --platform linux/arm64/v8,linux/amd64 -t $(APP) .
 
 .PHONY: integration_test
 integration_test:
-	@GOOS=linux GOARCH=amd64 go test -tags integration -c .
+	@GOOS=linux GOARCH=arm64 go test -tags integration -c .
 	@scp -q $(APP).test $(TEST_HOST):
 	@ssh -q $(TEST_HOST) sudo ./$(APP).test -test.run . $(TEST_FLAGS)
 
