@@ -1,4 +1,4 @@
-FROM golang:1.19-alpine3.16 as build
+FROM golang:1.24-alpine3.21 AS build
 RUN mkdir /src
 WORKDIR /src
 RUN apk --update add \
@@ -7,7 +7,7 @@ COPY . .
 RUN go mod download
 RUN go build ./cmd/wgo
 
-FROM alpine:3.16
+FROM alpine:3.21
 RUN mkdir /app
 COPY --from=build /src/wgo /app/
 
