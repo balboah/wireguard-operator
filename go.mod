@@ -35,5 +35,5 @@ require (
 	golang.org/x/sys v0.32.0 // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20231211153847-12269c276173 // indirect
 	google.golang.org/genproto v0.0.0-20230227214838-9b19f0bdc514 // indirect
-	google.golang.org/protobuf v1.28.2-0.20230118093459-a9481185b34d // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 )
