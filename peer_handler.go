@@ -197,7 +197,7 @@ func deletePeer(c WgDeviceConfigurator, publicKey []byte, p IPPool) error {
 		// memory leak in our IP pool if this fails.
 		log.Error("deletePeer: ", err)
 	}
-	err = c.ConfigureDevice(wgtypes.Config{
+	return c.ConfigureDevice(wgtypes.Config{
 		Peers: []wgtypes.PeerConfig{
 			{
 				PublicKey: pk,
@@ -205,8 +205,6 @@ func deletePeer(c WgDeviceConfigurator, publicKey []byte, p IPPool) error {
 			},
 		},
 	})
-
-	return freeAll(c, pk, p)
 }
 
 // freeAll loops all IP networks for a peer and frees IPv4 addresses from the pool.

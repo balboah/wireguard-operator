@@ -104,8 +104,6 @@ func (c *WgClient) PublicKey() []byte {
 // keyToSlice converts to slice which should have been the default.
 func keyToSlice(key wgtypes.Key) []byte {
 	b := make([]byte, wgtypes.KeyLen)
-	for n, k := range key {
-		b[n] = k
-	}
+	copy(b, key[:])
 	return b
 }

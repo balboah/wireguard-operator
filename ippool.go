@@ -53,18 +53,18 @@ func (p *Pool) Remove(ips ...net.IP) error {
 	p.allocMu.Lock()
 	defer p.allocMu.Unlock()
 
-	all := p.available
 	for _, ip := range ips {
 		if !p.network.Contains(ip) {
 			return errors.New("IP is not part of this pool")
 		}
+		// Remove the first occurrence of the IP
 		for n, a := range p.available {
 			if a.Equal(ip) {
-				all = append(all[:n], all[n+1:]...)
+				p.available = append(p.available[:n], p.available[n+1:]...)
+				break // Only remove the first occurrence
 			}
 		}
 	}
-	p.available = all
 	return nil
 }
 
@@ -77,7 +77,7 @@ func (p *Pool) Allocate() (ip net.IP, err error) {
 		ip = p.available[0]
 		p.available = p.available[1:]
 	} else {
-		err = errors.New("No more IPs currently available")
+		err = errors.New("no more IPs currently available")
 	}
 	return
 }
@@ -89,6 +89,13 @@ func (p *Pool) Free(ip net.IP) error {
 	}
 	p.allocMu.Lock()
 	defer p.allocMu.Unlock()
+
+	// Check if IP is already in available list to prevent double-free
+	for _, availableIP := range p.available {
+		if ip.Equal(availableIP) {
+			return nil // IP already free, no-op
+		}
+	}
 
 	p.available = append([]net.IP{ip}, p.available...)
 	return nil
