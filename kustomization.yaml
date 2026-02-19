@@ -6,8 +6,11 @@ namespace: default
 
 namePrefix: wireguard-
 
-commonLabels:
-  release: wireguard-v1
+labels:
+  - includeSelectors: true
+    includeTemplates: true
+    pairs:
+      release: wireguard-v1
 
 resources:
 - manifests/operator.yaml
