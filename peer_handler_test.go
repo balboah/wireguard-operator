@@ -239,6 +239,8 @@ func (dummy) PublicKey() []byte {
 
 func (dummy) Endpoint4() net.IP { return net.IP([]byte{1, 2, 3, 4}) }
 
-func (dummy) Endpoint6() net.IP { return net.IP([]byte{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}) }
+func (dummy) Endpoint6() net.IP {
+	return net.IP([]byte{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4})
+}
 
 func (dummy) Port() int { return 1234 }
