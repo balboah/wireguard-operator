@@ -12,11 +12,21 @@ func TestRemovePanic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ip1, _ := pool.Allocate()
-	ip2, _ := pool.Allocate()
+	ip1, err := pool.Allocate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ip2, err := pool.Allocate()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	pool.Free(ip2)
-	pool.Free(ip1)
+	if err := pool.Free(ip2); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.Free(ip1); err != nil {
+		t.Fatal(err)
+	}
 
 	err = pool.Remove(ip1, ip2)
 	if err != nil {
@@ -36,8 +46,13 @@ func TestDoubleFree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ip1, _ := pool.Allocate()
-	pool.Allocate() // empty the pool
+	ip1, err := pool.Allocate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Allocate(); err != nil { // empty the pool
+		t.Fatal(err)
+	}
 
 	err = pool.Free(ip1)
 	if err != nil {
@@ -50,7 +65,12 @@ func TestDoubleFree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	alloc1, _ := pool.Allocate()
+	alloc1, err := pool.Allocate()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Expected to fail on the now empty pool, an IP here means ip1 got
+	// handed back to the pool twice.
 	alloc2, _ := pool.Allocate()
 
 	if alloc1.Equal(alloc2) {
@@ -70,7 +90,10 @@ func TestBasicPool(t *testing.T) {
 	}
 
 	// Allocate and free
-	ip, _ := pool.Allocate()
+	ip, err := pool.Allocate()
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := pool.Free(ip); err != nil {
 		t.Fatal(err)
 	}
@@ -93,5 +116,27 @@ func TestIP4To6(t *testing.T) {
 	if s := net.IP(ip6).String(); s != "fdad:b10c:a::a01:203" {
 		t.Log(s)
 		t.Error("invalid IP")
+	}
+}
+
+// Each result must own its bytes. Appending into the prefix instead used to
+// alias every result to one array, handing a peer another peer's address.
+func TestIP4To6NoAliasing(t *testing.T) {
+	_, prefix, err := net.ParseCIDR("fdad:b10c:a::/48")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	first := ip4To6(net.IP{10, 1, 2, 3}, prefix)
+	second := ip4To6(net.IP{10, 4, 5, 6}, prefix)
+
+	if s := first.String(); s != "fdad:b10c:a::a01:203" {
+		t.Errorf("first address changed to %s after a second allocation", s)
+	}
+	if first.Equal(second) {
+		t.Error("both allocations returned the same address")
+	}
+	if s := prefix.IP.String(); s != "fdad:b10c:a::" {
+		t.Errorf("prefix was modified to %s", s)
 	}
 }

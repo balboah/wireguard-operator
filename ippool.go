@@ -102,7 +102,10 @@ func (p *Pool) Free(ip net.IP) error {
 }
 
 // ip4To6 will prefix IPv4 with the IPv6 network to create an IPv6 address.
-func ip4To6(ip4 net.IP, ip6prefix *net.IPNet) (ip6 net.IP) {
-	b6 := ip6prefix.IP.To16()
-	return append(b6[:12], ip4.To4()...)
+func ip4To6(ip4 net.IP, ip6prefix *net.IPNet) net.IP {
+	// Appending into the prefix would alias its backing array between callers.
+	ip6 := make(net.IP, net.IPv6len)
+	copy(ip6, ip6prefix.IP.To16())
+	copy(ip6[net.IPv6len-net.IPv4len:], ip4.To4())
+	return ip6
 }
