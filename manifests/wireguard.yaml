@@ -20,7 +20,7 @@ spec:
         resources:
           requests:
             cpu: 100m
-            memory: 256m
+            memory: 256Mi
         securityContext:
           capabilities:
             add: ["NET_ADMIN"]
