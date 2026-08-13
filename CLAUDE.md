@@ -9,13 +9,14 @@ This is a WireGuard operator that exposes WireGuard configuration through HTTP J
 ## Build and Development Commands
 
 ### Building and Testing
+- `make test` - Vet the whole module for linux and run the unit tests on the host
 - `make local_docker` - Build multi-platform Docker images locally (linux/arm64/v8, linux/amd64)
 - `make docker` - Build and push Docker image using Google Cloud Build with current git version tag
 - `make integration_test` - Run integration tests on remote test host (requires TEST_HOST environment variable)
 - `make clean` - Remove build artifacts (test binaries)
 
 ### Testing Strategy
-- Unit tests: `go test ./...` for all unit tests
+- Unit tests: `make test`. Plain `go test ./...` fails off linux since `cmd/wgo` needs netlink
 - Integration tests: `make integration_test` (requires remote Linux host for WireGuard functionality)
 - Integration tests are tagged with `//go:build integration` and test real WireGuard interface operations
 

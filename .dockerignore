@@ -1,5 +1,5 @@
-# The build context is uploaded to a GCS staging bucket by `make docker`.
-# Keep local secrets and VCS history out of it.
+# Keeps local secrets and VCS history out of the docker build context.
+# The GCS upload done by `make docker` is governed by .gcloudignore instead.
 .git
 .jj
 manifests/.*

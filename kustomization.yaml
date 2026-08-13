@@ -8,7 +8,6 @@ namePrefix: wireguard-
 
 labels:
   - includeSelectors: true
-    includeTemplates: true
     pairs:
       release: wireguard-v1
 

@@ -1,0 +1,8 @@
+# What `make docker` uploads to the Cloud Build staging bucket.
+# Without this file gcloud generates one from .gitignore, which misses .jj.
+#!include:.gitignore
+.gcloudignore
+.git
+.gitignore
+.jj
+.claude

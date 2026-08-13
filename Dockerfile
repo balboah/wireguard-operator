@@ -3,8 +3,9 @@ RUN mkdir /src
 WORKDIR /src
 RUN apk --update add \
   git ca-certificates build-base
-COPY . .
+COPY go.mod go.sum ./
 RUN go mod download
+COPY . .
 RUN go build ./cmd/wgo
 
 FROM alpine:3.24

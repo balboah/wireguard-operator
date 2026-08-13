@@ -4,12 +4,13 @@ APP?=wireguard-operator
 PROJECT?=$(shell gcloud -q config get-value project)
 VERSION?=$(shell git describe --abbrev=4 --always --tags --dirty)
 
-# cmd/wgo needs netlink and only builds on linux, so vet covers it there
-# while the unit tests run on the host.
+# cmd/wgo and the integration tests need netlink and only build on linux,
+# so vet covers them there while the unit tests run on the host.
 .PHONY: test
 test:
 	GOOS=linux go vet ./...
-	go test $(shell go list ./... | grep -v '/cmd/')
+	GOOS=linux go vet -tags integration ./...
+	PKGS=$$(go list ./... | grep -v '/cmd/') && go test $$PKGS
 
 .PHONY: docker
 docker: clean
