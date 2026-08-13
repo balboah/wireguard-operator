@@ -4,6 +4,13 @@ APP?=wireguard-operator
 PROJECT?=$(shell gcloud -q config get-value project)
 VERSION?=$(shell git describe --abbrev=4 --always --tags --dirty)
 
+# cmd/wgo needs netlink and only builds on linux, so vet covers it there
+# while the unit tests run on the host.
+.PHONY: test
+test:
+	GOOS=linux go vet ./...
+	go test $(shell go list ./... | grep -v '/cmd/')
+
 .PHONY: docker
 docker: clean
 	gcloud builds submit --config cloudbuild.yaml --substitutions=TAG_NAME=$(VERSION) --project $(PROJECT) .
