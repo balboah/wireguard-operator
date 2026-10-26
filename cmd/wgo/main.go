@@ -101,12 +101,13 @@ func main() {
 	log.Infof("Public key: %s", base64.StdEncoding.EncodeToString(c.PublicKey()))
 
 	http.Handle("/metrics", promhttp.Handler())
-	http.HandleFunc("/v1/peer", operator.LoopbackWritesOnly(operator.PeerHandler(c, id, p, net6)))
+	http.HandleFunc("/v1/peer", operator.PeerHandler(c, id, p, net6))
 	http.HandleFunc("/v1/id", operator.IDHandler(id))
 	if *tlsKey != "" {
 		err = listenAndServeMutualTLS(*listenAddr, *clientCert, *tlsCert, *tlsKey)
 	} else {
-		err = http.ListenAndServe(*listenAddr, nil)
+		// Without mTLS nothing authenticates the caller, so only loopback may write.
+		err = http.ListenAndServe(*listenAddr, operator.LoopbackWritesOnly(http.DefaultServeMux))
 	}
 	if err != nil {
 		log.Fatal(err)

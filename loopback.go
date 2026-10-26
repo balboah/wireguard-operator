@@ -9,8 +9,8 @@ import (
 
 // LoopbackWritesOnly answers 403 to any non-read request whose peer address
 // is not loopback, so writes are limited to callers on the same host.
-func LoopbackWritesOnly(next http.HandlerFunc) http.HandlerFunc {
-	return func(rw http.ResponseWriter, req *http.Request) {
+func LoopbackWritesOnly(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		switch req.Method {
 		case http.MethodGet, http.MethodHead, http.MethodOptions:
 		default:
@@ -20,8 +20,8 @@ func LoopbackWritesOnly(next http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
-		next(rw, req)
-	}
+		next.ServeHTTP(rw, req)
+	})
 }
 
 func isLoopback(remoteAddr string) bool {

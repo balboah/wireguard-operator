@@ -8,9 +8,9 @@ import (
 
 func TestLoopbackWritesOnly(t *testing.T) {
 	called := false
-	h := LoopbackWritesOnly(func(rw http.ResponseWriter, req *http.Request) {
+	h := LoopbackWritesOnly(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		called = true
-	})
+	}))
 
 	for _, tc := range []struct {
 		method, remote string
@@ -27,12 +27,14 @@ func TestLoopbackWritesOnly(t *testing.T) {
 		{"PUT", "garbage", http.StatusForbidden, false},
 		{"PATCH", "192.0.2.1:4321", http.StatusForbidden, false},
 		{"GET", "192.0.2.1:4321", http.StatusOK, true},
+		{"HEAD", "192.0.2.1:4321", http.StatusOK, true},
+		{"OPTIONS", "192.0.2.1:4321", http.StatusOK, true},
 	} {
 		called = false
 		req := httptest.NewRequest(tc.method, "http://operator/v1/peer", nil)
 		req.RemoteAddr = tc.remote
 		w := httptest.NewRecorder()
-		h(w, req)
+		h.ServeHTTP(w, req)
 		if w.Code != tc.want {
 			t.Errorf("%s from %s: got %d, want %d", tc.method, tc.remote, w.Code, tc.want)
 		}
