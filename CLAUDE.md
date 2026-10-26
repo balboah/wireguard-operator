@@ -46,7 +46,7 @@ This is a WireGuard operator that exposes WireGuard configuration through HTTP J
 
 ### API Endpoints
 
-- `/v1/peer` - Peer management (PUT to add/update, DELETE to remove, GET to list)
+- `/v1/peer` - Peer management (PUT to add/update, POST to replace all, DELETE to remove). Without mTLS, writes are accepted from loopback callers only (403 otherwise)
 - `/v1/id` - Get operator identity information
 - `/metrics` - Prometheus metrics endpoint
 

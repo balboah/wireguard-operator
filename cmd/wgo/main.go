@@ -106,7 +106,8 @@ func main() {
 	if *tlsKey != "" {
 		err = listenAndServeMutualTLS(*listenAddr, *clientCert, *tlsCert, *tlsKey)
 	} else {
-		err = http.ListenAndServe(*listenAddr, nil)
+		// Without mTLS nothing authenticates the caller, so only loopback may write.
+		err = http.ListenAndServe(*listenAddr, operator.LoopbackWritesOnly(http.DefaultServeMux))
 	}
 	if err != nil {
 		log.Fatal(err)
